@@ -1,13 +1,16 @@
 # backend/app/routes.py
-import os
 import jwt
-import asyncio
-import subprocess
-from datetime import datetime, timedelta
+import datetime
+
 from functools import wraps
 from flask import current_app as app, request, jsonify, make_response, session, Response
 
+# Database
 from . import db
+from .models import Admin
+
+# Secret key for JWT
+SECRET_KEY = "XbBtyL3Z9NzYUgzK8e6A"
 
 
 # ANCHOR GET sample
@@ -25,116 +28,91 @@ def api_index():
 # ------------------------------
 
 
-# # ANCHOR 회원가입
-# @app.route("/api/signUp", methods=["POST"])
-# def signUp():
-#     try:
-#         # params
-#         account = request.form.get("account")
-#         password = request.form.get("password")
-#         username = request.form.get("username")
-#         uid = request.form.get("uid")
+# JWT 인증 데코레이터
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("x-access-token")
+        if not token:
+            return make_response(
+                jsonify({"message": "토큰이 없습니다.", "data": None}), 401
+            )
 
-#         # 입력값 검증
-#         if not account or not password or not username:
-#             return make_response(
-#                 jsonify({"message": "파라미터가 유효하지 않습니다.", "data": None}), 400
-#             )
+        try:
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            current_user = Admin.query.filter_by(id=data["id"]).first()
+        except Exception as e:
+            return make_response(
+                jsonify({"message": "토큰이 유효하지 않습니다.", "data": str(e)}), 401
+            )
 
-#         # 중복 계정 체크
-#         existing_user = User.query.filter_by(account=account).first()
-#         if existing_user:
-#             return make_response(
-#                 jsonify({"message": "아이디가 이미 존재합니다.", "data": None}), 400
-#             )
+        return f(current_user, *args, **kwargs)
 
-#         # 새로운 사용자 생성
-#         new_user = User(
-#             account=account,
-#             password=password,
-#             username=username,
-#             tg_account=uid,
-#         )
+    return decorated
 
-#         # 데이터베이스에 저장
-#         db.session.add(new_user)
-#         db.session.commit()
 
-#         user_id = new_user.id
+# ANCHOR 로그인
+@app.route("/api/signIn", methods=["POST"])
+def signIn():
+    try:
+        # params
+        account = request.form.get("account")
+        password = request.form.get("password")
 
-#         BTCUSDT = Trading.query.filter_by(user_id=user_id, symbol="BTCUSDT").first()
-#         ETHUSDT = Trading.query.filter_by(user_id=user_id, symbol="ETHUSDT").first()
-#         XRPUSDT = Trading.query.filter_by(user_id=user_id, symbol="XRPUSDT").first()
-#         DOGEUSDT = Trading.query.filter_by(user_id=user_id, symbol="DOGEUSDT").first()
+        # 계정 확인
+        admin = Admin.query.filter_by(account=account).first()
+        if not admin:
+            return make_response(
+                jsonify({"message": "계정을 찾을 수 없습니다.", "data": None}),
+                400,
+            )
 
-#         if BTCUSDT is None:
-#             BTCUSDT = Trading(
-#                 user_id=user_id,
-#                 symbol="BTCUSDT",
-#                 leverage=30,
-#                 tp=10,
-#                 sl=0,
-#                 qty=0.001,
-#                 add_order=0,
-#             )
-#             db.session.add(BTCUSDT)
-#             db.session.commit()
+        # 비밀번호 확인
+        if admin.password != password:
+            return make_response(
+                jsonify({"message": "비밀번호가 올바르지 않습니다.", "data": None}),
+                400,
+            )
 
-#         if ETHUSDT is None:
-#             ETHUSDT = Trading(
-#                 user_id=user_id,
-#                 symbol="ETHUSDT",
-#                 leverage=30,
-#                 tp=10,
-#                 sl=0,
-#                 qty=0.01,
-#                 add_order=0,
-#             )
-#             db.session.add(ETHUSDT)
-#             db.session.commit()
+        # JWT 생성
+        token = jwt.encode(
+            {
+                "id": admin.id,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+            },
+            SECRET_KEY,
+            algorithm="HS256",
+        )
 
-#         if XRPUSDT is None:
-#             XRPUSDT = Trading(
-#                 user_id=user_id,
-#                 symbol="XRPUSDT",
-#                 leverage=30,
-#                 tp=10,
-#                 sl=0,
-#                 qty=5,
-#                 add_order=0,
-#             )
-#             db.session.add(XRPUSDT)
-#             db.session.commit()
+        return make_response(
+            jsonify({"message": "로그인 되었습니다.", "data": {"token": token}}),
+            200,
+        )
 
-#         if DOGEUSDT is None:
-#             DOGEUSDT = Trading(
-#                 user_id=user_id,
-#                 symbol="DOGEUSDT",
-#                 leverage=30,
-#                 tp=10,
-#                 sl=0,
-#                 qty=30,
-#                 add_order=0,
-#             )
-#             db.session.add(DOGEUSDT)
-#             db.session.commit()
+    except Exception as e:
+        # 에러 처리
+        db.session.rollback()
+        return make_response(jsonify({"message": "시스템 오류", "data": str(e)}), 500)
 
-#         return make_response(
-#             jsonify(
-#                 {
-#                     "message": "아이디가 생성되었습니다.",
-#                     "data": {
-#                         "userId": new_user.id,
-#                     },
-#                 }
-#             ),
-#             200,
-#         )
 
-#     except Exception as e:
-#         # 에러 처리
-#         db.session.rollback()
-#         return make_response(jsonify({"message": "시스템 오류", "data": str(e)}), 500)
+# ANCHOR 사용자 인증 및 정보 가져오기
+@app.route("/api/getUser", methods=["GET"])
+@token_required
+def getUser(current_user):
+    try:
+        user_data = {
+            "id": current_user.id,
+            "account": current_user.account,
+            "username": current_user.username,
+        }
+
+        return make_response(
+            jsonify({"message": "사용자 정보 조회 성공", "data": user_data}),
+            200,
+        )
+
+    except Exception as e:
+        return make_response(jsonify({"message": "시스템 오류", "data": str(e)}), 500)
 
 
 # # ANCHOR 키수정

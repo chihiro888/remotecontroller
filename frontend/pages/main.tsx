@@ -1,3 +1,4 @@
+// frontend/pages/main.tsx
 const Main = () => {
   return (
     <>
