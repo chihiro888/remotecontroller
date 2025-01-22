@@ -16,8 +16,10 @@ import { checkAuth } from '../utils/auth'
 
 const Main = () => {
   const router = useRouter()
-  const [currentAccount, setCurrentAccount] = useState(0)
-  const accounts = ['아이디1', '아이디2', '아이디3'] // 예시 계정 리스트
+  const [accounts, setAccounts] = useState([]) // Account list from API
+  const [currentAccount, setCurrentAccount] = useState(0) // Current selected account
+  const [loading, setLoading] = useState(true) // Loading state
+  const [error, setError] = useState('') // Error message
 
   const handleLogout = () => {
     localStorage.removeItem('jwt') // JWT 삭제
@@ -36,9 +38,46 @@ const Main = () => {
     await checkAuth(router)
   }
 
+  const fetchAccounts = async () => {
+    try {
+      const token = localStorage.getItem('jwt') // Get JWT from localStorage
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/getAccountList`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-token': token
+          }
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        setAccounts(data.data || [])
+      } else {
+        const result = await response.json()
+        setError(result.message || 'Error fetching accounts.')
+      }
+    } catch (e) {
+      // setError('Failed to connect to server.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     authenticate()
+    fetchAccounts()
   }, [])
+
+  if (loading) {
+    return (
+      <Box>
+        <Text>Loading...</Text>
+      </Box>
+    )
+  }
 
   return (
     <Box>
@@ -62,46 +101,56 @@ const Main = () => {
       </Flex>
 
       {/* Main Content */}
-      <Box maxW="sm" mx="auto" p={4}>
-        <VStack spacing={6}>
-          {/* Account Management UI */}
-          <Box w="full" borderWidth="1px" borderRadius="lg" p={4} shadow="md">
-            <VStack spacing={4}>
-              {/* 계정명 */}
-              <Text fontSize="lg" fontWeight="bold">
-                {accounts[currentAccount]}
-              </Text>
+      {accounts.length !== 0 ? (
+        <Box maxW="sm" mx="auto" p={4}>
+          <VStack spacing={6}>
+            {/* Account Management UI */}
+            <Box w="full" borderWidth="1px" borderRadius="lg" p={4} shadow="md">
+              <VStack spacing={4}>
+                {/* 계정명 */}
+                <Text fontSize="lg" fontWeight="bold">
+                  {accounts[currentAccount].account}
+                </Text>
 
-              {/* 종목 선택 */}
-              <Select placeholder="종목 선택" size="lg">
-                <option value="BTCUSDT">BTCUSDT</option>
-                <option value="ETHUSDT">ETHUSDT</option>
-              </Select>
+                {/* <Text>id : {accounts[currentAccount].id}</Text>
+                <Text>token : {accounts[currentAccount].token}</Text>
+                <Text>secret : {accounts[currentAccount].secret}</Text> */}
 
-              {/* 수량 입력 */}
-              <Input placeholder="수량 입력" type="number" size="lg" />
+                {/* 종목 선택 */}
+                <Select value="BTCUSDT" size="lg">
+                  <option value="BTCUSDT">BTCUSDT</option>
+                  <option value="ETHUSDT">ETHUSDT</option>
+                </Select>
 
-              {/* Buy / Sell Buttons */}
-              <HStack spacing={4} w="full">
-                <Button colorScheme="green" w="full" size="lg">
-                  Buy
-                </Button>
-                <Button colorScheme="red" w="full" size="lg">
-                  Sell
-                </Button>
-              </HStack>
-            </VStack>
-          </Box>
+                {/* 수량 입력 */}
+                <Input placeholder="수량 입력" type="number" size="lg" />
 
-          <Box w="full" borderWidth="1px" borderRadius="lg" p={4} shadow="md">
-            <VStack spacing={4}>
-              <Text fontSize="lg" fontWeight="bold">
-                주문이력
-              </Text>
-            </VStack>
-          </Box>
-        </VStack>
-      </Box>
+                {/* Buy / Sell Buttons */}
+                <HStack spacing={4} w="full">
+                  <Button colorScheme="green" w="full" size="lg">
+                    Buy
+                  </Button>
+                  <Button colorScheme="red" w="full" size="lg">
+                    Sell
+                  </Button>
+                </HStack>
+              </VStack>
+            </Box>
+
+            <Box w="full" borderWidth="1px" borderRadius="lg" p={4} shadow="md">
+              <VStack spacing={4}>
+                <Text fontSize="lg" fontWeight="bold">
+                  주문이력
+                </Text>
+              </VStack>
+            </Box>
+          </VStack>
+        </Box>
+      ) : (
+        <Box textAlign={'center'} mt={10}>
+          <Text fontSize={'lg'}>등록된 계정이 없습니다</Text>
+        </Box>
+      )}
 
       {/* Bottom Navigation */}
       <Flex
