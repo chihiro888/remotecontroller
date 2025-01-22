@@ -1,0 +1,12 @@
+Flask==3.0.3
+Flask-Cors==5.0.0
+requests==2.32.3
+Flask-SQLAlchemy==3.1.1
+PyMySQL==1.1.1
+pybit==5.8.0
+PyJWT==2.9.0
+python-telegram-bot==21.7
+python-socketio==5.11.4
+SQLAlchemy==2.0.36
+pandas==2.2.3
+numpy==2.1.3
