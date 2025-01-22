@@ -7,7 +7,7 @@ from flask import current_app as app, request, jsonify, make_response, session, 
 
 # Database
 from . import db
-from .models import Admin
+from .models import Admin, Account
 
 # Secret key for JWT
 SECRET_KEY = "XbBtyL3Z9NzYUgzK8e6A"
@@ -108,6 +108,34 @@ def getUser(current_user):
 
         return make_response(
             jsonify({"message": "사용자 정보 조회 성공", "data": user_data}),
+            200,
+        )
+
+    except Exception as e:
+        return make_response(jsonify({"message": "시스템 오류", "data": str(e)}), 500)
+
+
+# ANCHOR 계정 목록 가져오기
+@app.route("/api/getAccountList", methods=["GET"])
+@token_required
+def getAccountList(current_user):
+    try:
+        # Retrieve all accounts from the database
+        accounts = Account.query.all()
+
+        # Format the data as a list of dictionaries
+        account_list = [
+            {
+                "id": account.id,
+                "account": account.account,
+                "token": account.token,
+                "secret": account.secret,
+            }
+            for account in accounts
+        ]
+
+        return make_response(
+            jsonify({"message": "계정 목록 조회 성공", "data": account_list}),
             200,
         )
 

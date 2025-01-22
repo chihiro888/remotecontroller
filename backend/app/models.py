@@ -31,3 +31,29 @@ class Admin(db.Model):
 
     def __repr__(self):
         return f"<Admin id={self.id} account={self.account}>"
+
+
+class Account(db.Model):
+    __tablename__ = "_account"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment="id")
+    account = db.Column(db.String(255), unique=True, nullable=False, comment="account")
+    token = db.Column(db.String(255), nullable=False, comment="token")
+    secret = db.Column(db.String(255), nullable=False, comment="secret")
+
+    created_at = db.Column(
+        db.DateTime, default=utc_plus_9, nullable=False, comment="create time"
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=None,
+        onupdate=utc_plus_9,
+        nullable=True,
+        comment="update time",
+    )
+    deleted_at = db.Column(
+        db.DateTime, default=None, nullable=True, comment="delete time"
+    )
+
+    def __repr__(self):
+        return f"<Account id={self.id} account={self.account}>"
