@@ -34,9 +34,9 @@ const Login = () => {
   }
 
   return (
-    <Box maxW="sm" mx="auto" mt={10}>
+    <Box maxW="sm" mx="auto" mt={10} px={6}>
       <Heading as="h1" size="lg" textAlign="center" mb={6}>
-        로그인
+        BingX 리모콘
       </Heading>
       <VStack spacing={4}>
         <Input
@@ -50,7 +50,7 @@ const Login = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Button colorScheme="blue" onClick={handleLogin}>
+        <Button colorScheme="blue" onClick={handleLogin} w="full">
           로그인
         </Button>
       </VStack>
