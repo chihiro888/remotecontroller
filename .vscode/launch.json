@@ -1,0 +1,41 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "debug NestJS",
+      "runtimeExecutable": "yarn",
+      "osx": {
+        "args": ["start:local"]
+      },
+      "windows": {
+        "args": ["start:local_win"]
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      "autoAttachChildProcesses": true,
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "NODE_ENV": "local"
+      }
+    },
+    {
+      "type": "python",
+      "request": "launch",
+      "name": "debug Flask",
+      "program": "${workspaceFolder}/api/run.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": ["--host=0.0.0.0", "--port=9001"],
+      "env": {
+        "FLASK_ENV": "development",
+        "NODE_ENV": "local"
+      },
+      "pythonPath": "${workspaceFolder}/api/venv/bin/python"
+    },
+  ]
+}
