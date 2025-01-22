@@ -1,5 +1,4 @@
-// frontend/pages/login.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Input, Button, VStack, Box, Heading } from '@chakra-ui/react'
 

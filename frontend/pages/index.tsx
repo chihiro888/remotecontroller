@@ -1,49 +1,22 @@
-// frontend/pages/index.tsx
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { Button } from '@chakra-ui/react'
+import { checkAuth } from '../utils/auth'
 
 const Home = () => {
   const router = useRouter()
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('jwt') // JWT를 로컬 스토리지에서 가져옴
-        if (!token) {
-          console.log('토큰이 유효하지 않습니다.')
-        }
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/getUser`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-access-token': token // JWT를 헤더에 포함
-            }
-          }
-        )
-
-        if (response.status !== 200) {
-          console.log('토큰이 유효하지 않습니다.')
-        }
-
-        const data = await response.json()
-        const user = data.data
-        console.log('User:', user) // 성공적으로 사용자 정보를 가져옴
-
-        if (user) {
-          router.push('/main')
-        }
-      } catch (error) {
-        console.log('토큰이 유효하지 않습니다.')
-        router.push('/login') // JWT가 유효하지 않은 경우 로그인 페이지로 리다이렉트
-      }
+  const authenticate = async () => {
+    const user = await checkAuth(router)
+    if (user) {
+      router.push('/main')
+    } else {
+      router.push('/signIn')
     }
+  }
 
-    checkAuth()
-  }, [router])
+  useEffect(() => {
+    authenticate()
+  }, [])
 
   return <></>
 }
