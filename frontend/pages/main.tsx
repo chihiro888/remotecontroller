@@ -39,6 +39,96 @@ const Main = () => {
     setCurrentAccount((prev) => (prev === accounts.length - 1 ? 0 : prev + 1))
   }
 
+  const handleClickBuy = async () => {
+    console.log('현재 선택된 계정:', accounts[currentAccount].account)
+    console.log('선택된 종목:', selectedSymbol)
+    console.log('입력된 수량:', quantity)
+
+    if (selectedSymbol === 'BTC-USDT' && Number(quantity) < 0.0001) {
+      alert('0.0001 이상의 수량을 입력해주세요.')
+      return false
+    }
+    if (selectedSymbol === 'ETH-USDT' && Number(quantity) < 0.01) {
+      alert('0.01 이상의 수량을 입력해주세요.')
+      return false
+    }
+
+    try {
+      const token = localStorage.getItem('jwt') // Get JWT from localStorage
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/buy`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'x-access-token': token // Add JWT to headers
+          },
+          body: new URLSearchParams({
+            account: accounts[currentAccount].account, // 현재 계정
+            symbol: selectedSymbol, // 선택된 종목
+            qty: quantity // 입력된 수량
+          })
+        }
+      )
+
+      const result = await response.json()
+
+      if (response.ok) {
+        alert(result.message)
+      } else {
+        alert(result.message || '구매 요청 실패')
+      }
+    } catch (error) {
+      console.error('구매 요청 중 오류 발생:', error)
+      alert('시스템 오류가 발생했습니다.')
+    }
+  }
+
+  const handleClickSell = async () => {
+    console.log('현재 선택된 계정:', accounts[currentAccount].account)
+    console.log('선택된 종목:', selectedSymbol)
+    console.log('입력된 수량:', quantity)
+
+    if (selectedSymbol === 'BTC-USDT' && Number(quantity) < 0.0001) {
+      alert('0.0001 이상의 수량을 입력해주세요.')
+      return false
+    }
+    if (selectedSymbol === 'ETH-USDT' && Number(quantity) < 0.01) {
+      alert('0.01 이상의 수량을 입력해주세요.')
+      return false
+    }
+
+    try {
+      const token = localStorage.getItem('jwt') // Get JWT from localStorage
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/sell`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'x-access-token': token // Add JWT to headers
+          },
+          body: new URLSearchParams({
+            account: accounts[currentAccount].account, // 현재 계정
+            symbol: selectedSymbol, // 선택된 종목
+            qty: quantity // 입력된 수량
+          })
+        }
+      )
+
+      const result = await response.json()
+
+      if (response.ok) {
+        alert(result.message)
+      } else {
+        alert(result.message || '판매 요청 실패')
+      }
+    } catch (error) {
+      console.error('판매 요청 중 오류 발생:', error)
+      alert('시스템 오류가 발생했습니다.')
+    }
+  }
+
   const fetchPositions = async () => {
     try {
       const token = localStorage.getItem('jwt') // Get JWT from localStorage
@@ -71,9 +161,11 @@ const Main = () => {
   }
 
   useEffect(() => {
+    fetchPositions()
+
     const interval = setInterval(() => {
       fetchPositions()
-    }, 10000) // Call every 10 seconds
+    }, 3000) // Call every 3 seconds
 
     return () => clearInterval(interval)
   }, [currentAccount, accounts])
@@ -174,6 +266,26 @@ const Main = () => {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                 />
+
+                {/* Buy / Sell Buttons */}
+                <HStack spacing={4} w="full">
+                  <Button
+                    colorScheme="green"
+                    w="full"
+                    size="lg"
+                    onClick={handleClickBuy}
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    colorScheme="red"
+                    w="full"
+                    size="lg"
+                    onClick={handleClickSell}
+                  >
+                    Sell
+                  </Button>
+                </HStack>
               </VStack>
             </Box>
 
@@ -191,7 +303,16 @@ const Main = () => {
                   </Text>
                   <Flex gap={2}>
                     <Text>{positions['btc'][0]['leverage']}x</Text>
-                    <Text>{positions['btc'][0]['positionSide']}</Text>
+                    <Text
+                      style={{
+                        color:
+                          positions['btc'][0]['positionSide'] === 'LONG'
+                            ? 'green'
+                            : 'red'
+                      }}
+                    >
+                      {positions['btc'][0]['positionSide']}
+                    </Text>
                   </Flex>
                   <Flex gap={2}>
                     <Text>평단가: {positions['btc'][0]['avgPrice']}</Text>
@@ -201,12 +322,25 @@ const Main = () => {
                   </Flex>
                   <Flex gap={2}>
                     <Text>
-                      미실현손익: {positions['btc'][0]['unrealizedProfit']} (
-                      {(positions['btc'][0]['pnlRatio'] * 100).toFixed(2)} %)
+                      미실현손익:{' '}
+                      <span
+                        style={{
+                          color:
+                            positions['btc'][0]['unrealizedProfit'] < 0
+                              ? 'red'
+                              : 'green'
+                        }}
+                      >
+                        {positions['btc'][0]['unrealizedProfit']} (
+                        {(positions['btc'][0]['pnlRatio'] * 100).toFixed(2)} %)
+                      </span>
                     </Text>
                   </Flex>
                   <Flex gap={2}>
-                    <Text>수량: {positions['btc'][0]['availableAmt']}</Text>
+                    수량:{' '}
+                    <Text fontWeight={'bold'}>
+                      {positions['btc'][0]['availableAmt']} BTC
+                    </Text>
                   </Flex>
                 </Box>
               </>
@@ -228,7 +362,16 @@ const Main = () => {
                   </Text>
                   <Flex gap={2}>
                     <Text>{positions['eth'][0]['leverage']}x</Text>
-                    <Text>{positions['eth'][0]['positionSide']}</Text>
+                    <Text
+                      style={{
+                        color:
+                          positions['eth'][0]['positionSide'] === 'LONG'
+                            ? 'green'
+                            : 'red'
+                      }}
+                    >
+                      {positions['eth'][0]['positionSide']}
+                    </Text>
                   </Flex>
                   <Flex gap={2}>
                     <Text>평단가: {positions['eth'][0]['avgPrice']}</Text>
@@ -238,12 +381,25 @@ const Main = () => {
                   </Flex>
                   <Flex gap={2}>
                     <Text>
-                      미실현손익: {positions['eth'][0]['unrealizedProfit']} (
-                      {(positions['eth'][0]['pnlRatio'] * 100).toFixed(2)} %)
+                      미실현손익:{' '}
+                      <span
+                        style={{
+                          color:
+                            positions['eth'][0]['unrealizedProfit'] < 0
+                              ? 'red'
+                              : 'green'
+                        }}
+                      >
+                        {positions['eth'][0]['unrealizedProfit']} (
+                        {(positions['eth'][0]['pnlRatio'] * 100).toFixed(2)} %)
+                      </span>
                     </Text>
                   </Flex>
                   <Flex gap={2}>
-                    <Text>수량: {positions['eth'][0]['availableAmt']}</Text>
+                    수량:{' '}
+                    <Text fontWeight={'bold'}>
+                      {positions['eth'][0]['availableAmt']} ETH
+                    </Text>
                   </Flex>
                 </Box>
               </>
@@ -257,6 +413,11 @@ const Main = () => {
           <Text fontSize={'lg'}>등록된 계정이 없습니다</Text>
         </Box>
       )}
+
+      <Box mb={15}>.</Box>
+      <Box mb={15}>.</Box>
+      <Box mb={15}>.</Box>
+      <Box mb={15}>.</Box>
 
       {/* Bottom Navigation */}
       <Flex
