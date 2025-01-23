@@ -175,6 +175,15 @@ def buy(current_user):
             api_secret=secret,
         )
 
+        # 레버리지 설정
+        exchange.set_leverage(30)
+
+        # 포지션 모드 설정 (One-way mode)
+        exchange.set_position_mode()
+
+        # 마진 모드 설정 (Cross mode)
+        exchange.set_margin_type()
+
         result = exchange.order("BUY", qty)
         if result.get("result") == True:
             return make_response(
@@ -228,6 +237,15 @@ def sell(current_user):
             api_key=token,
             api_secret=secret,
         )
+
+        # 레버리지 설정
+        exchange.set_leverage(30)
+
+        # 포지션 모드 설정 (One-way mode)
+        exchange.set_position_mode()
+
+        # 마진 모드 설정 (Cross mode)
+        exchange.set_margin_type()
 
         result = exchange.order("SELL", qty)
         if result.get("result") == True:
